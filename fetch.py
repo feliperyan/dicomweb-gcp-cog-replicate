@@ -1,7 +1,7 @@
 """Fetch DICOM data from a Google Cloud Healthcare DICOM store.
 
 Uses DICOMweb (QIDO-RS for search, WADO-RS for retrieval) via the
-dicomweb_client library, authenticated with Application Default Credentials.
+dicomweb_client library, authenticated with a GCP service account key file.
 
 Usage:
     uv run python fetch.py
@@ -16,8 +16,8 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 import pydicom
-import google.auth
 import google.auth.transport.requests
+import google.oauth2.service_account
 from dicomweb_client import DICOMwebClient
 
 
@@ -39,13 +39,16 @@ BASE_URL = (
 
 DOWNLOADS_DIR = Path(__file__).parent / "downloads"
 SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
+SERVICE_ACCOUNT_KEY = Path(__file__).parent / "gcp_key.json"
 
 
 # --- Auth --------------------------------------------------------------------
 
 def make_client() -> DICOMwebClient:
-    """Create a DICOMwebClient authenticated via Application Default Credentials."""
-    credentials, _ = google.auth.default(scopes=SCOPES)
+    """Create a DICOMwebClient authenticated via a service account key file."""
+    credentials = google.oauth2.service_account.Credentials.from_service_account_file(
+        SERVICE_ACCOUNT_KEY, scopes=SCOPES
+    )
     session = google.auth.transport.requests.AuthorizedSession(credentials)
     return DICOMwebClient(url=BASE_URL, session=session)
 
